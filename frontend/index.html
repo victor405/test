@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Victor Labs AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen">
+
+  <div class="max-w-3xl mx-auto p-6">
+
+    <!-- Header -->
+    <h1 class="text-3xl font-bold mb-6 text-center">
+      Victor Labs AI
+    </h1>
+
+    <!-- Prompt Box -->
+    <div class="bg-gray-800 p-4 rounded-xl shadow mb-6">
+      <textarea id="promptInput"
+        class="w-full p-3 rounded bg-gray-900 border border-gray-700 text-white"
+        rows="4"
+        placeholder="Enter your prompt..."></textarea>
+
+      <div class="flex gap-3 mt-4">
+        <button onclick="submitPrompt()"
+          class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+          Submit
+        </button>
+
+        <button onclick="autoPrompt()"
+          class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded">
+          Auto Prompt
+        </button>
+
+        <button onclick="loadHistory()"
+          class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded">
+          Load History
+        </button>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div id="status" class="text-sm text-gray-400 mb-4"></div>
+
+    <!-- Results -->
+    <div id="results" class="space-y-4"></div>
+
+  </div>
+
+<script>
+const API_BASE = "https://api.victorlabs.dev";
+
+// Submit prompt → Gemini service
+async function submitPrompt() {
+  const text = document.getElementById("promptInput").value;
+  setStatus("Sending prompt...");
+
+  const res = await fetch(`${API_BASE}/ai/analyze`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ text })
+  });
+
+  const data = await res.json();
+  setStatus("Saved to DB");
+
+  prependResult(data.prompt, data.analysis);
+}
+
+// Auto prompt → generator service
+async function autoPrompt() {
+  setStatus("Generating prompt...");
+
+  const res = await fetch(`${API_BASE}/generate-once`, {
+    method: "POST"
+  });
+
+  const data = await res.json();
+
+  document.getElementById("promptInput").value = data.prompt;
+
+  setStatus("Generated prompt. Click submit.");
+}
+
+// Load history → Rust service
+async function loadHistory() {
+  setStatus("Loading history...");
+
+  const res = await fetch(`${API_BASE}/prompts`);
+  const data = await res.json();
+
+  const results = document.getElementById("results");
+  results.innerHTML = "";
+
+  data.forEach(item => {
+    appendResult(item.prompt, item.answer);
+  });
+
+  setStatus("Loaded history");
+}
+
+// UI helpers
+function setStatus(msg) {
+  document.getElementById("status").innerText = msg;
+}
+
+function prependResult(prompt, answer) {
+  const results = document.getElementById("results");
+  results.prepend(createCard(prompt, answer));
+}
+
+function appendResult(prompt, answer) {
+  const results = document.getElementById("results");
+  results.appendChild(createCard(prompt, answer));
+}
+
+function createCard(prompt, answer) {
+  const div = document.createElement("div");
+
+  div.className = "bg-gray-800 p-4 rounded-xl border border-gray-700";
+
+  div.innerHTML = `
+    <div class="text-sm text-gray-400 mb-2">Prompt</div>
+    <div class="mb-3">${escapeHtml(prompt)}</div>
+
+    <div class="text-sm text-gray-400 mb-2">Response</div>
+    <div class="text-green-300 whitespace-pre-wrap">${escapeHtml(answer)}</div>
+  `;
+
+  return div;
+}
+
+function escapeHtml(text) {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+</script>
+
+</body>
+</html>
