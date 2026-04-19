@@ -2,11 +2,7 @@ name: Terraform Apply
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - "devops/terraform/**"
-  workflow_dispatch:
+    branches: [main]
 
 permissions:
   contents: read
@@ -20,9 +16,6 @@ jobs:
     defaults:
       run:
         working-directory: devops/terraform
-
-    permissions:
-      contents: read
 
     env:
       AWS_REGION: us-east-1
