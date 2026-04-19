@@ -6,9 +6,6 @@ USER root
 RUN apt-get update && apt-get install -y awscli jq && \
     rm -rf /var/lib/apt/lists/*
 
-# switch back to non-root (flyway user)
-USER flyway
-
 # copy sql files (ensure ownership)
 COPY --chown=flyway:flyway sql/ /flyway/sql/
 
