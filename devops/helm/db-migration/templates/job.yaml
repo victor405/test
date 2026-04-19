@@ -10,33 +10,41 @@ spec:
       restartPolicy: Never
 
       containers:
-      - name: db-migration
-        image: 391701072873.dkr.ecr.us-east-1.amazonaws.com/db-migration:latest
-        imagePullPolicy: Always
+        - name: db-migration
+          image: 391701072873.dkr.ecr.us-east-1.amazonaws.com/db-migration:latest
+          imagePullPolicy: Always
 
-        command: ["/bin/sh", "-c"]
-        args:
-          - |
-            echo "Fetching DB credentials..."
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
 
-            SECRET=$(aws secretsmanager get-secret-value \
-              --secret-id $DB_SECRET_ARN \
-              --region $AWS_REGION \
-              --query SecretString \
-              --output text)
+              echo "Fetching DB credentials..."
 
-            DB_HOST=$(echo $SECRET | jq -r .host)
-            DB_USER=$(echo $SECRET | jq -r .username)
-            DB_PASS=$(echo $SECRET | jq -r .password)
-            DB_NAME=$(echo $SECRET | jq -r .dbname)
+              SECRET=$(aws secretsmanager get-secret-value \
+                --secret-id $DB_SECRET_ARN \
+                --region $AWS_REGION \
+                --query SecretString \
+                --output text)
 
-            echo "Running Flyway..."
+              DB_HOST=$(echo $SECRET | jq -r .host)
+              DB_USER=$(echo $SECRET | jq -r .username)
+              DB_PASS=$(echo $SECRET | jq -r .password)
+              DB_NAME=$(echo $SECRET | jq -r .dbname)
 
-            flyway \
-              -url=jdbc:mysql://$DB_HOST:3306/$DB_NAME \
-              -user=$DB_USER \
-              -password=$DB_PASS \
-              -locations=filesystem:/flyway/sql \
-              migrate
+              echo "Running Flyway migration..."
 
-            echo "Done"
+              flyway \
+                -url=jdbc:mysql://$DB_HOST:3306/$DB_NAME \
+                -user=$DB_USER \
+                -password=$DB_PASS \
+                -locations=filesystem:/flyway/sql \
+                migrate
+
+              echo "Migration complete"
+
+          env:
+            - name: DB_SECRET_ARN
+              value: "rds!db-d04bd647-c31d-4d00-85d1-0f9e4b230020"
+            - name: AWS_REGION
+              value: "us-east-1"
