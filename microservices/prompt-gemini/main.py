@@ -1,104 +1,79 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from google import genai
-import mysql.connector
 import os
-import logging
+import json
+import boto3
+import pymysql
+import requests
+from fastapi import FastAPI
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("ai-microservice")
+app = FastAPI()
 
-app = FastAPI(title="AI Microservice")
+# ---------- DB ----------
+def get_db():
+    secret_arn = os.environ["DB_SECRET_ARN"]
+    region = os.environ["AWS_REGION"]
 
-client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    sm = boto3.client("secretsmanager", region_name=region)
+    secret = json.loads(sm.get_secret_value(SecretId=secret_arn)["SecretString"])
 
+    rds = boto3.client("rds", region_name=region)
+    endpoint = rds.describe_db_instances()["DBInstances"][0]["Endpoint"]["Address"]
 
-class AnalyzeRequest(BaseModel):
-    text: str
-
-
-def get_db_connection():
-    return mysql.connector.connect(
-        host=os.environ["DB_HOST"],
-        port=int(os.getenv("DB_PORT", "3306")),
-        database=os.environ["DB_NAME"],
-        user=os.environ["DB_USER"],
-        password=os.environ["DB_PASSWORD"],
-        connection_timeout=5,
+    return pymysql.connect(
+        host=endpoint,
+        user=secret["username"],
+        password=secret["password"],
+        database="demodb",
+        connect_timeout=5
     )
 
+# ---------- Gemini ----------
+def ask_gemini(prompt: str) -> str:
+    api_key = os.environ.get("GEMINI_API_KEY")
+
+    if not api_key:
+        return f"Echo: {prompt}"
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+
+    body = {
+        "contents": [
+            {"parts": [{"text": prompt}]}
+        ]
+    }
+
+    r = requests.post(url, json=body, timeout=10)
+    r.raise_for_status()
+
+    data = r.json()
+    return data["candidates"][0]["content"]["parts"][0]["text"]
+
+# ---------- Routes ----------
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
-
-
-@app.get("/db-check")
-def db_check():
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT 1;")
-        result = cursor.fetchone()
-        cursor.close()
+        conn = get_db()
         conn.close()
-
-        return {"db": "ok", "result": result[0]}
-
+        return {"status": "ok"}
     except Exception as e:
-        logger.exception("Database check failed")
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"status": "error", "error": str(e)}
 
+@app.post("/prompt")
+def prompt(data: dict):
+    prompt_text = data.get("prompt", "")
 
-@app.post("/ai/analyze")
-def analyze(request: AnalyzeRequest):
-    prompt = f"""
-    Analyze this text briefly.
+    answer = ask_gemini(prompt_text)
 
-    Return:
-    - summary
-    - sentiment
-    - operational_risk
-
-    Text:
-    {request.text}
-    """
-
-    try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
-            contents=prompt,
+    conn = get_db()
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO prompt_history (prompt, answer) VALUES (%s, %s)",
+            (prompt_text, answer)
         )
-
-        answer = response.text or ""
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        cursor.execute(
-            """
-            INSERT INTO ai_prompt_answers (prompt, answer)
-            VALUES (%s, %s);
-            """,
-            (request.text, answer),
-        )
-
         conn.commit()
-        row_id = cursor.lastrowid
+    conn.close()
 
-        cursor.close()
-        conn.close()
-
-        logger.info("Saved Gemini response to RDS. id=%s", row_id)
-
-        return {
-            "id": row_id,
-            "model": "gemini-2.5-flash-lite",
-            "prompt": request.text,
-            "analysis": answer,
-            "saved_to_rds": True,
-        }
-
-    except Exception as e:
-        logger.exception("AI analyze request failed")
-        raise HTTPException(status_code=500, detail=str(e))
+    return {
+        "prompt": prompt_text,
+        "answer": answer
+    }

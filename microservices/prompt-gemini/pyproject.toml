@@ -1,0 +1,10 @@
+[project]
+name = "prompt-gemini"
+version = "0.1.0"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "boto3",
+    "pymysql",
+    "requests"
+]

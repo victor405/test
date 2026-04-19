@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prompt-gemini
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app: prompt-gemini
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 80

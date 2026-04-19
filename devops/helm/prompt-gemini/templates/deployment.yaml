@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prompt-gemini
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prompt-gemini
+  template:
+    metadata:
+      labels:
+        app: prompt-gemini
+    spec:
+      containers:
+        - name: prompt-gemini
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+            - containerPort: 80
+
+          env:
+            - name: DB_SECRET_ARN
+              value: "{{ .Values.env.DB_SECRET_ARN }}"
+            - name: AWS_REGION
+              value: "{{ .Values.env.AWS_REGION }}"
+            - name: GEMINI_API_KEY
+              value: "{{ .Values.env.GEMINI_API_KEY }}"
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 20
