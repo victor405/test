@@ -1,31 +1,42 @@
-containers:
-  - name: db-migration
-    image: 391701072873.dkr.ecr.us-east-1.amazonaws.com/db-migration:latest
-    imagePullPolicy: Always
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migration
+spec:
+  backoffLimit: 1
 
-    command: ["/bin/sh", "-c"]
-    args:
-      - |
-        echo "Fetching DB credentials..."
+  template:
+    spec:
+      restartPolicy: Never
 
-        SECRET=$(aws secretsmanager get-secret-value \
-          --secret-id $DB_SECRET_ARN \
-          --region $AWS_REGION \
-          --query SecretString \
-          --output text)
+      containers:
+      - name: db-migration
+        image: 391701072873.dkr.ecr.us-east-1.amazonaws.com/db-migration:latest
+        imagePullPolicy: Always
 
-        DB_HOST=$(echo $SECRET | jq -r .host)
-        DB_USER=$(echo $SECRET | jq -r .username)
-        DB_PASS=$(echo $SECRET | jq -r .password)
-        DB_NAME=$(echo $SECRET | jq -r .dbname)
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Fetching DB credentials..."
 
-        echo "Running Flyway..."
+            SECRET=$(aws secretsmanager get-secret-value \
+              --secret-id $DB_SECRET_ARN \
+              --region $AWS_REGION \
+              --query SecretString \
+              --output text)
 
-        flyway \
-          -url=jdbc:mysql://$DB_HOST:3306/$DB_NAME \
-          -user=$DB_USER \
-          -password=$DB_PASS \
-          -locations=filesystem:/flyway/sql \
-          migrate
+            DB_HOST=$(echo $SECRET | jq -r .host)
+            DB_USER=$(echo $SECRET | jq -r .username)
+            DB_PASS=$(echo $SECRET | jq -r .password)
+            DB_NAME=$(echo $SECRET | jq -r .dbname)
 
-        echo "Done"
+            echo "Running Flyway..."
+
+            flyway \
+              -url=jdbc:mysql://$DB_HOST:3306/$DB_NAME \
+              -user=$DB_USER \
+              -password=$DB_PASS \
+              -locations=filesystem:/flyway/sql \
+              migrate
+
+            echo "Done"

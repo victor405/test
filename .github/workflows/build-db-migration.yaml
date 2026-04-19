@@ -5,6 +5,7 @@ on:
     branches:
       - main
     paths:
+      - "devops/helm/db-migration/**"
       - "microservices/db-migration/**"
   workflow_dispatch:
 
