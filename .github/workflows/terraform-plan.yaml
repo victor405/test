@@ -1,10 +1,8 @@
 name: Terraform Plan
 
 on:
-  pull_request:
-    paths:
-      - "devops/terraform/**"
-  workflow_dispatch:
+  push:
+    branches: [main]
 
 jobs:
   terraform-plan:
