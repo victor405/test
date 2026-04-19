@@ -1,90 +1,90 @@
-# main.tf
-
-terraform {
-  required_version = ">= 1.6.0"
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = ">= 5.0, < 7.0"
-    }
-  }
-}
-
-locals {
-  name = "incode-demo-eks"
-
-  tags = {
-    Project     = "incode-sre-assessment"
-    Environment = "demo"
-    ManagedBy   = "terraform"
-  }
-}
-
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
+# EKS
 module "eks" {
-  source = "git::https://github.com/victor405/terraform-module-eks.git?ref=main"
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 20.0"
 
-  cluster_name       = local.name
-  aws_region         = var.aws_region
-  vpc_id             = module.vpc.vpc_id
-  subnet_ids         = module.vpc.private_subnets
-  kubernetes_version = var.kubernetes_version
+  cluster_name    = "${var.app_name}-eks"
+  cluster_version = var.kubernetes_version
 
-  # Easier for local kubectl during take-home.
-  endpoint_public_access  = true
-  endpoint_private_access = true
-  public_access_cidrs     = [var.admin_cidr]
+  vpc_id     = aws_vpc.main.id
+  subnet_ids = aws_subnet.private[*].id
 
-  # Keep useful SRE logs, but not too crazy.
-  enabled_cluster_log_types = [
-    "api",
-    "audit",
-    "authenticator"
-  ]
+  cluster_endpoint_public_access = true
 
-  encryption_config_enabled = true
-
-  node_groups = {
+  eks_managed_node_groups = {
     default = {
-      capacity_type  = "ON_DEMAND"
-      instance_types = ["t3.medium"]
-
       desired_size = 1
       min_size     = 1
       max_size     = 1
 
-      disk_size = 20
-
-      labels = {
-        workload = "demo"
-      }
-
-      tags = local.tags
+      instance_types = ["t3.medium"]
+      capacity_type  = "ON_DEMAND"
     }
   }
 
-  # Required because your module variable has no default.
-  fargate_profiles = {}
+  tags = {
+    Environment = "dev"
+  }
+}
 
-  # Turn off extras for the assessment unless you intentionally need them.
-  aws_load_balancer_controller_enabled = false
-  keda_enabled                         = false
-  kubernetes_dashboard_enabled         = false
-  argocd_enabled                       = false
+# prompt-gemini (FastAPI)
+resource "aws_ecr_repository" "prompt_gemini" {
+  name = "prompt-gemini"
 
-  cloudwatch_observability_enabled = false
-  datadog_observability_enabled    = false
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
 
-  addons                     = {}
-  identity_providers         = {}
-  access_policy_associations = {}
-  eks_access_entries         = {}
-  pod_identity_associations  = {}
-  prometheus_workspaces      = {}
+# prompt-generator (Go/Rust)
+resource "aws_ecr_repository" "prompt_generator" {
+  name = "prompt-generator"
 
-  eks_cluster_tags = local.tags
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+
+# prompt-history (read API)
+resource "aws_ecr_repository" "prompt_history" {
+  name = "prompt-history"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+
+# db-migration (job / flyway / init)
+resource "aws_ecr_repository" "db_migration" {
+  name = "db-migration"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+
+resource "aws_ecr_lifecycle_policy" "default" {
+  for_each = {
+    prompt_gemini   = aws_ecr_repository.prompt_gemini.name
+    prompt_generator = aws_ecr_repository.prompt_generator.name
+    prompt_history  = aws_ecr_repository.prompt_history.name
+    db_migration    = aws_ecr_repository.db_migration.name
+  }
+
+  repository = each.value
+
+  policy = jsonencode({
+    rules = [{
+      rulePriority = 1
+      description  = "Keep last 10 images"
+      selection = {
+        tagStatus     = "any"
+        countType     = "imageCountMoreThan"
+        countNumber   = 2
+      }
+      action = {
+        type = "expire"
+      }
+    }]
+  })
 }
