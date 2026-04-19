@@ -2,7 +2,7 @@ name: Deploy DB Migration
 
 on:
   workflow_run:
-    workflows: ["Build db-migration"]
+    workflows: ["Build DB Migration"]
     types:
       - completed
 
@@ -14,7 +14,7 @@ permissions:
 jobs:
   deploy-db-migration:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    
+
     runs-on: ubuntu-latest
 
     env:
