@@ -27,15 +27,23 @@ spec:
                 --query SecretString \
                 --output text)
 
-              DB_HOST=$(echo $SECRET | jq -r .host)
               DB_USER=$(echo $SECRET | jq -r .username)
               DB_PASS=$(echo $SECRET | jq -r .password)
-              DB_NAME=$(echo $SECRET | jq -r .dbname)
+
+              echo "Fetching RDS endpoint..."
+
+              DB_HOST=$(aws rds describe-db-instances \
+                --region $AWS_REGION \
+                --query "DBInstances[0].Endpoint.Address" \
+                --output text)
+
+              DB_NAME="demodb"
+              DB_PORT=3306
 
               echo "Running Flyway migration..."
 
               flyway \
-                -url=jdbc:mysql://$DB_HOST:3306/$DB_NAME \
+                -url=jdbc:mysql://$DB_HOST:$DB_PORT/$DB_NAME \
                 -user=$DB_USER \
                 -password=$DB_PASS \
                 -locations=filesystem:/flyway/sql \
