@@ -1,4 +1,4 @@
-name: Build Images
+name: Build DB Migration
 
 on:
   push:
@@ -14,7 +14,7 @@ permissions:
   id-token: write
 
 jobs:
-  build:
+  build-db-migration:
     runs-on: ubuntu-latest
 
     env:

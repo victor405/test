@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migration
+spec:
+  backoffLimit: 1
+
+  template:
+    spec:
+      restartPolicy: Never
+
+      containers:
+        - name: db-migration
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          env:
+            - name: DB_SECRET_ARN
+              value: "{{ .Values.env.DB_SECRET_ARN }}"
+            - name: AWS_REGION
+              value: "{{ .Values.env.AWS_REGION }}"
