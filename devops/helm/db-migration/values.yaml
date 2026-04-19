@@ -1,7 +1,7 @@
 image:
   repository: 391701072873.dkr.ecr.us-east-1.amazonaws.com/db-migration
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 env:
   DB_SECRET_ARN: "rds!db-d04bd647-c31d-4d00-85d1-0f9e4b230020"
