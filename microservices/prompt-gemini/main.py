@@ -134,7 +134,7 @@ def history():
                 ORDER BY id DESC
                 LIMIT 50
             """)
-            rows = cur.fetchall()
+            rows = list(cur.fetchall())
         conn.close()
 
         rows.reverse()
