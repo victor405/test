@@ -1,0 +1,28 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prompt-history
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prompt-history
+  template:
+    metadata:
+      labels:
+        app: prompt-history
+    spec:
+      containers:
+        - name: prompt-history
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+            - containerPort: 80
+
+          env:
+            - name: DB_SECRET_ARN
+              value: "{{ .Values.env.DB_SECRET_ARN }}"
+            - name: AWS_REGION
+              value: "{{ .Values.env.AWS_REGION }}"

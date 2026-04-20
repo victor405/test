@@ -1,0 +1,12 @@
+image:
+  repository: 391701072873.dkr.ecr.us-east-1.amazonaws.com/prompt-history
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 80
+
+env:
+  DB_SECRET_ARN: "rds!db-d04bd647-c31d-4d00-85d1-0f9e4b230020"
+  AWS_REGION: "us-east-1"
