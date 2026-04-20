@@ -64,8 +64,11 @@ func getDB() (*sql.DB, error) {
 }
 
 func historyHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Received /history request")
+
 	db, err := getDB()
 	if err != nil {
+		log.Println("DB ERROR:", err)
 		http.Error(w, err.Error(), 500)
 		return
 	}
@@ -78,10 +81,13 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 		LIMIT 10
 	`)
 	if err != nil {
+		log.Println("QUERY ERROR:", err)
 		http.Error(w, err.Error(), 500)
 		return
 	}
 	defer rows.Close()
+
+	log.Println("Query successful")
 
 	results := []Record{}
 
@@ -89,6 +95,7 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 		var rec Record
 		err := rows.Scan(&rec.Prompt, &rec.Answer, &rec.CreatedAt)
 		if err != nil {
+			log.Println("SCAN ERROR:", err)
 			http.Error(w, err.Error(), 500)
 			return
 		}
