@@ -1,10 +1,16 @@
 name: Deploy Datadog
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "devops/helm/datadog/**"
   workflow_dispatch:
 
 permissions:
   contents: read
+  pages: write
   id-token: write
 
 jobs:
