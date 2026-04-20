@@ -118,17 +118,27 @@ def history():
         conn = get_db()
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, prompt, answer, created_at
+                SELECT prompt, answer
                 FROM prompt_history
                 ORDER BY id DESC
                 LIMIT 50
             """)
-            rows = list(cur.fetchall())
+            rows = cur.fetchall()
         conn.close()
 
-        rows.reverse()
+        # ensure newest last for UI (optional)
+        rows = list(rows)[::-1]
 
-        return {"history": rows}
+        # convert tuples → JSON objects
+        history = [
+            {
+                "prompt": row[0],
+                "answer": row[1]
+            }
+            for row in rows
+        ]
+
+        return {"history": history}
 
     except Exception as e:
         logger.error(f"History fetch failed: {str(e)}")
