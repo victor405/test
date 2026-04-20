@@ -15,4 +15,3 @@ datadog:
     - env:dev
     - service:prompt-gemini
 
-
