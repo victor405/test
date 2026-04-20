@@ -34,7 +34,7 @@ def ask_gemini(prompt: str) -> str:
     if not api_key:
         return f"Echo: {prompt}"
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={api_key}"
 
     body = {
         "contents": [
@@ -45,9 +45,10 @@ def ask_gemini(prompt: str) -> str:
     r = requests.post(url, json=body, timeout=10)
 
     if r.status_code != 200:
-        return f"Gemini error: {r.text}"
+        return f"Gemini error: {r.status_code} - {r.text}"
 
     data = r.json()
+
     return data["candidates"][0]["content"]["parts"][0]["text"]
 
 # ---------- Routes ----------
