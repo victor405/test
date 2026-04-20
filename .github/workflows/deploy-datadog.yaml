@@ -58,6 +58,7 @@ jobs:
           helm upgrade --install datadog-agent datadog/datadog \
             --namespace datadog \
             --create-namespace \
+            --set datadog.apiKey=${{ secrets.DATADOG_API_KEY }} \
             --set datadog.site=us5.datadoghq.com \
             --set datadog.clusterName=demo-eks \
             --set datadog.logs.enabled=true \
