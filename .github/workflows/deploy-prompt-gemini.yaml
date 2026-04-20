@@ -53,4 +53,5 @@ jobs:
         run: |
           helm upgrade --install $RELEASE_NAME devops/helm/prompt-gemini \
             --namespace $NAMESPACE \
-            --create-namespace
+            --create-namespace \
+            --set env.GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
