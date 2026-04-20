@@ -81,3 +81,20 @@ def prompt(data: dict):
         "prompt": prompt_text,
         "answer": answer
     }
+# ---------- API GATEWAY : Prompt History ----------
+def get_history():
+    try:
+        url = "http://prompt-history.prompt-history/history"
+        r = requests.get(url, timeout=5)
+
+        if r.status_code != 200:
+            return {"error": f"history service error: {r.status_code}"}
+
+        return r.json()
+
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/history")
+def history():
+    return get_history()
