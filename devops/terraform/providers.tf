@@ -20,4 +20,10 @@ terraform {
     encrypt        = true
     dynamodb_table = "tfstate"
   }
+  required_providers {
+    datadog = {
+      source  = "DataDog/datadog"
+      version = "~> 3.0"
+    }
+  }
 }
