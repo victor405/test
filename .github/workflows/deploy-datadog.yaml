@@ -1,26 +1,19 @@
-name: Deploy Prompt History
+name: Deploy Datadog
 
 on:
-  workflow_run:
-    workflows: ["Build Prompt History"]
-    types:
-      - completed
+  workflow_dispatch:
 
 permissions:
   contents: read
   id-token: write
 
 jobs:
-  deploy-prompt-history:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-
+  deploy-datadog:
     runs-on: ubuntu-latest
 
     env:
       AWS_REGION: us-east-1
       CLUSTER_NAME: demo-eks
-      RELEASE_NAME: prompt-history
-      NAMESPACE: prompt-history
 
     steps:
       - name: Checkout
@@ -49,8 +42,22 @@ jobs:
             --region $AWS_REGION \
             --name $CLUSTER_NAME
 
-      - name: Deploy prompt-history (Helm)
+      - name: Add Datadog repo
         run: |
-          helm upgrade --install $RELEASE_NAME devops/helm/prompt-history \
-            --namespace $NAMESPACE \
-            --create-namespace
+          helm repo add datadog https://helm.datadoghq.com
+          helm repo update
+
+      - name: Deploy Datadog
+        run: |
+          helm upgrade --install datadog-agent datadog/datadog \
+            --namespace datadog \
+            --create-namespace \
+            --set datadog.apiKey=${{ secrets.DATADOG_API_KEY }} \
+            --set datadog.site="datadoghq.com" \
+            --set datadog.logs.enabled=true \
+            --set datadog.logs.containerCollectAll=true \
+            --set datadog.apm.enabled=true \
+            --set datadog.processAgent.enabled=true \
+            --set datadog.kubeStateMetricsEnabled=true \
+            --set datadog.networkMonitoring.enabled=true \
+            --set datadog.systemProbe.enabled=true

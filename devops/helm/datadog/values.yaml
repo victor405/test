@@ -1,0 +1,16 @@
+datadog:
+  apiKey: "" # injected via CI
+  site: datadoghq.com
+
+  logs:
+    enabled: true
+    containerCollectAll: true
+
+  kubeStateMetricsEnabled: true
+
+  processAgent:
+    enabled: true
+
+  tags:
+    - env:dev
+    - service:prompt-gemini

@@ -1,16 +1,33 @@
 import os
 import json
+import logging
 import boto3
 import pymysql
 import requests
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from ddtrace import patch_all
+import ddtrace
 
+# ---------- Datadog APM ----------
+patch_all()
+
+ddtrace.config.service = "prompt-gemini"
+ddtrace.config.env = "dev"
+ddtrace.config.version = "1.0"
+
+# ---------- Logging ----------
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# ---------- App ----------
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://victor405.github.io"
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -19,6 +36,8 @@ app.add_middleware(
 def get_db():
     secret_arn = os.environ["DB_SECRET_ARN"]
     region = os.environ["AWS_REGION"]
+
+    logger.info("Fetching DB credentials")
 
     sm = boto3.client("secretsmanager", region_name=region)
     secret = json.loads(sm.get_secret_value(SecretId=secret_arn)["SecretString"])
@@ -36,7 +55,6 @@ def get_db():
 
 # ---------- Gemini ----------
 def ask_gemini(prompt: str) -> str:
-    import requests
     api_key = os.environ.get("GEMINI_API_KEY")
 
     if not api_key:
@@ -50,14 +68,23 @@ def ask_gemini(prompt: str) -> str:
         ]
     }
 
-    r = requests.post(url, json=body, timeout=10)
+    try:
+        r = requests.post(url, json=body, timeout=10)
 
-    if r.status_code != 200:
-        return f"Gemini error: {r.status_code} - {r.text}"
+        if r.status_code != 200:
+            logger.error(f"Gemini error: {r.status_code} - {r.text}")
+            return f"Gemini error: {r.status_code}"
 
-    data = r.json()
+        data = r.json()
 
-    return data["candidates"][0]["content"]["parts"][0]["text"]
+        return data.get("candidates", [{}])[0] \
+            .get("content", {}) \
+            .get("parts", [{}])[0] \
+            .get("text", "No response")
+
+    except Exception as e:
+        logger.error(f"Gemini exception: {str(e)}")
+        return "Gemini request failed"
 
 # ---------- Routes ----------
 
@@ -68,41 +95,30 @@ def health():
         conn.close()
         return {"status": "ok"}
     except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
         return {"status": "error", "error": str(e)}
 
 @app.post("/prompt")
 def prompt(data: dict):
     prompt_text = data.get("prompt", "")
 
+    logger.info(f"Prompt received: {prompt_text}")
+
     answer = ask_gemini(prompt_text)
 
-    conn = get_db()
-    with conn.cursor() as cur:
-        cur.execute(
-            "INSERT INTO prompt_history (prompt, answer) VALUES (%s, %s)",
-            (prompt_text, answer)
-        )
-        conn.commit()
-    conn.close()
+    try:
+        conn = get_db()
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO prompt_history (prompt, answer) VALUES (%s, %s)",
+                (prompt_text, answer)
+            )
+            conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"DB insert failed: {str(e)}")
 
     return {
         "prompt": prompt_text,
         "answer": answer
     }
-# ---------- API GATEWAY : Prompt History ----------
-def get_history():
-    try:
-        url = "http://prompt-history.prompt-history/history"
-        r = requests.get(url, timeout=5)
-
-        if r.status_code != 200:
-            return {"error": f"history service error: {r.status_code}"}
-
-        return r.json()
-
-    except Exception as e:
-        return {"error": str(e)}
-
-@app.get("/history")
-def history():
-    return get_history()

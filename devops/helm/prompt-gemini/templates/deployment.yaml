@@ -27,6 +27,14 @@ spec:
               value: "{{ .Values.env.AWS_REGION }}"
             - name: GEMINI_API_KEY
               value: "{{ .Values.env.GEMINI_API_KEY }}"
+            - name: DD_SERVICE
+              value: prompt-gemini
+            - name: DD_ENV
+              value: dev
+            - name: DD_VERSION
+              value: "1.0"
+            - name: DD_TRACE_ENABLED
+              value: "true"
 
           readinessProbe:
             httpGet:

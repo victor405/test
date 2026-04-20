@@ -6,5 +6,6 @@ dependencies = [
     "uvicorn",
     "boto3",
     "pymysql",
-    "requests"
+    "requests",
+    "ddtrace"
 ]

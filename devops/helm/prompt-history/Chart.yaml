@@ -1,5 +1,0 @@
-apiVersion: v2
-name: prompt-history
-description: Prompt History Service (Go)
-version: 0.1.0
-appVersion: "1.0"
