@@ -65,5 +65,4 @@ jobs:
             --set datadog.apm.enabled=true \
             --set datadog.processAgent.enabled=true \
             --set datadog.kubeStateMetricsEnabled=true \
-            --set datadog.networkMonitoring.enabled=true \
-            --set datadog.systemProbe.enabled=true
+            --set datadog.networkMonitoring.enabled=true
