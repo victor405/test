@@ -36,24 +36,6 @@ resource "aws_ecr_repository" "prompt_gemini" {
   }
 }
 
-# prompt-generator (Go/Rust)
-resource "aws_ecr_repository" "prompt_generator" {
-  name = "prompt-generator"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-}
-
-# prompt-history (read API)
-resource "aws_ecr_repository" "prompt_history" {
-  name = "prompt-history"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-}
-
 # db-migration (job / flyway / init)
 resource "aws_ecr_repository" "db_migration" {
   name = "db-migration"
@@ -66,8 +48,6 @@ resource "aws_ecr_repository" "db_migration" {
 resource "aws_ecr_lifecycle_policy" "default" {
   for_each = {
     prompt_gemini   = aws_ecr_repository.prompt_gemini.name
-    prompt_generator = aws_ecr_repository.prompt_generator.name
-    prompt_history  = aws_ecr_repository.prompt_history.name
     db_migration    = aws_ecr_repository.db_migration.name
   }
 

@@ -6,15 +6,6 @@ import pymysql
 import requests
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from ddtrace import patch_all
-import ddtrace
-
-# ---------- Datadog APM ----------
-patch_all()
-
-ddtrace.config.service = "prompt-gemini"
-ddtrace.config.env = "dev"
-ddtrace.config.version = "1.0"
 
 # ---------- Logging ----------
 logging.basicConfig(level=logging.INFO)
@@ -25,9 +16,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://victor405.github.io"
-    ],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
