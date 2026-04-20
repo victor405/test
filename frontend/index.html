@@ -53,14 +53,6 @@
           </span>
 
           <button
-            onclick="loadHistory()"
-            class="rounded-lg border px-3 py-2 hover:opacity-80"
-            style="border-color: var(--border);"
-          >
-            History
-          </button>
-
-          <button
             onclick="toggleTheme()"
             id="themeButton"
             class="rounded-lg border px-3 py-2 hover:opacity-80"
@@ -85,7 +77,7 @@
           <p class="mb-2 text-sm font-semibold text-indigo-400">AI Prompt Console</p>
           <h2 class="text-2xl font-bold">Send a prompt to Gemini through your EKS backend.</h2>
           <p class="mt-2 max-w-2xl text-sm" style="color: var(--muted);">
-            Frontend runs on GitHub Pages. API traffic goes to a public Kubernetes LoadBalancer, then FastAPI, then private RDS.
+            Frontend runs on GitHub Pages. API traffic goes to a public Kubernetes LoadBalancer, then FastAPI, Gemini, and private RDS.
           </p>
         </div>
 
@@ -113,14 +105,6 @@
 
           <div class="mt-3 flex flex-wrap gap-2">
             <button
-              onclick="autoGenerate()"
-              class="rounded-lg border px-3 py-2 text-sm hover:opacity-80"
-              style="border-color: var(--border);"
-            >
-              Auto Generate
-            </button>
-
-            <button
               onclick="clearChat()"
               class="rounded-lg border px-3 py-2 text-sm hover:opacity-80"
               style="border-color: var(--border);"
@@ -144,7 +128,7 @@
             <div class="text-center" style="color: var(--muted);">↓</div>
             <div class="rounded-lg p-3" style="background: var(--panel-2);">EKS FastAPI Pod</div>
             <div class="text-center" style="color: var(--muted);">↓</div>
-            <div class="rounded-lg p-3" style="background: var(--panel-2);">Private RDS MySQL</div>
+            <div class="rounded-lg p-3" style="background: var(--panel-2);">Gemini API + Private RDS MySQL</div>
           </div>
         </div>
 
@@ -153,7 +137,6 @@
           <ul class="space-y-2 text-sm" style="color: var(--muted);">
             <li><span class="text-emerald-400">GET</span> /health</li>
             <li><span class="text-indigo-400">POST</span> /prompt</li>
-            <li><span class="text-blue-400">GET</span> /history</li>
           </ul>
         </div>
       </aside>
@@ -161,7 +144,7 @@
   </div>
 
   <script>
-    const API_BASE = "http://YOUR-ELB-DNS";
+    const API_URL = "http://a56423ab8880e4868ba6fd48b1743586-1639509504.us-east-1.elb.amazonaws.com";
 
     const chat = document.getElementById("chat");
     const input = document.getElementById("promptInput");
@@ -245,7 +228,7 @@
       const status = addStatus("Thinking...");
 
       try {
-        const res = await fetch(`${API_BASE}/prompt`, {
+        const res = await fetch(`${API_URL}/prompt`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -258,51 +241,10 @@
         const data = await res.json();
         status.remove();
 
-        addMessage(data.response || JSON.stringify(data, null, 2), "assistant");
+        addMessage(data.answer || JSON.stringify(data, null, 2), "assistant");
       } catch (err) {
         status.remove();
         addMessage(`Error: ${err.message}`, "assistant");
-      }
-    }
-
-    async function autoGenerate() {
-      const prompts = [
-        "Explain Kubernetes Service type LoadBalancer in simple terms.",
-        "Give me 5 SRE talking points for this demo.",
-        "Explain why private RDS behind EKS is safer.",
-        "Generate a short incident summary for a failed health check.",
-        "Explain this architecture: GitHub Pages to EKS to RDS."
-      ];
-
-      input.value = prompts[Math.floor(Math.random() * prompts.length)];
-      await sendPrompt();
-    }
-
-    async function loadHistory() {
-      hideEmptyState();
-      chat.innerHTML = "";
-
-      const status = addStatus("Loading history...");
-
-      try {
-        const res = await fetch(`${API_BASE}/history`);
-        if (!res.ok) throw new Error(`API error: ${res.status}`);
-
-        const data = await res.json();
-        status.remove();
-
-        if (!Array.isArray(data) || data.length === 0) {
-          addMessage("No history found yet.", "assistant");
-          return;
-        }
-
-        data.reverse().forEach(item => {
-          addMessage(item.prompt || "(missing prompt)", "user");
-          addMessage(item.response || "(missing response)", "assistant");
-        });
-      } catch (err) {
-        status.remove();
-        addMessage(`Error loading history: ${err.message}`, "assistant");
       }
     }
 
