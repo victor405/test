@@ -28,12 +28,13 @@ def get_db():
 
 # ---------- Gemini ----------
 def ask_gemini(prompt: str) -> str:
+    import requests
     api_key = os.environ.get("GEMINI_API_KEY")
 
     if not api_key:
         return f"Echo: {prompt}"
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
 
     body = {
         "contents": [
@@ -42,7 +43,9 @@ def ask_gemini(prompt: str) -> str:
     }
 
     r = requests.post(url, json=body, timeout=10)
-    r.raise_for_status()
+
+    if r.status_code != 200:
+        return f"Gemini error: {r.text}"
 
     data = r.json()
     return data["candidates"][0]["content"]["parts"][0]["text"]
