@@ -122,3 +122,25 @@ def prompt(data: dict):
         "prompt": prompt_text,
         "answer": answer
     }
+
+@app.get("/history")
+def history():
+    try:
+        conn = get_db()
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, prompt, answer, created_at
+                FROM prompt_history
+                ORDER BY id DESC
+                LIMIT 50
+            """)
+            rows = cur.fetchall()
+        conn.close()
+
+        rows.reverse()
+
+        return {"history": rows}
+
+    except Exception as e:
+        logger.error(f"History fetch failed: {str(e)}")
+        return {"error": str(e)}

@@ -130,6 +130,13 @@
             >
               Clear
             </button>
+            <button
+              onclick="showHistory()"
+              class="rounded-lg border px-3 py-2 text-sm hover:opacity-80"
+              style="border-color: var(--border);"
+            >
+              History
+            </button>
           </div>
         </div>
       </section>
@@ -272,9 +279,60 @@
       emptyState.style.display = "block";
     }
 
+    async function showHistory() {
+      const modal = document.getElementById("historyModal");
+      const content = document.getElementById("historyContent");
+
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+
+      content.innerHTML = "Loading...";
+
+      try {
+        const res = await fetch(`${API_URL}/history`);
+        const data = await res.json();
+
+        if (!data.history) throw new Error("No history");
+
+        content.innerHTML = data.history
+          .slice(-50)
+          .reverse()
+          .map(item => `
+            <div class="border rounded-lg p-3" style="border-color: var(--border);">
+              <div class="text-indigo-400 mb-1 font-semibold">Prompt</div>
+              <div class="mb-2">${escapeHtml(item.prompt)}</div>
+
+              <div class="text-emerald-400 mb-1 font-semibold">Answer</div>
+              <div>${escapeHtml(item.answer)}</div>
+            </div>
+          `).join("");
+
+      } catch (err) {
+        content.innerHTML = `Error: ${err.message}`;
+      }
+    }
+
+    function closeHistory() {
+      const modal = document.getElementById("historyModal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") sendPrompt();
     });
   </script>
+  <div id="historyModal" class="fixed inset-0 hidden items-center justify-center bg-black/60 z-50">
+  <div class="w-[90%] max-w-3xl max-h-[80%] resize overflow-auto rounded-2xl border shadow-2xl p-4"
+    style="border-color: var(--border); background: var(--panel);">
+
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold">Prompt History</h2>
+      <button onclick="closeHistory()" class="text-xl">&times;</button>
+    </div>
+
+    <div id="historyContent" class="space-y-4 text-sm"></div>
+  </div>
+</div>
 </body>
 </html>
