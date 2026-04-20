@@ -45,7 +45,13 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
+        env:
+          TF_VAR_datadog_api_key: ${{ secrets.DATADOG_API_KEY }}
+          TF_VAR_datadog_app_key: ${{ secrets.DATADOG_APP_KEY }}
         run: terraform plan -out=tfplan
 
       - name: Terraform Apply
+        env:
+          TF_VAR_datadog_api_key: ${{ secrets.DATADOG_API_KEY }}
+          TF_VAR_datadog_app_key: ${{ secrets.DATADOG_APP_KEY }}
         run: terraform apply -auto-approve tfplan

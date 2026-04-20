@@ -39,3 +39,15 @@ variable "kubernetes_version" {
   type        = string
   default     = "1.34"
 }
+
+variable "datadog_api_key" {
+  description = "Datadog API Key"
+  sensitive   = true
+  type        = string
+}
+
+variable "datadog_app_key" {
+  description = "Datadog APP Key"
+  sensitive   = true
+  type        = string
+}

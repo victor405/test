@@ -6,6 +6,12 @@ provider "aws" {
   }
 }
 
+provider "datadog" {
+  api_key = var.datadog_api_key
+  app_key = var.datadog_app_key
+  api_url = "https://api.us5.datadoghq.com"
+}
+
 terraform {
   backend "s3" {
     bucket         = "tf-state-management-824398329482348"
