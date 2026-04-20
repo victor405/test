@@ -144,3 +144,4 @@ def history():
     except Exception as e:
         logger.error(f"History fetch failed: {str(e)}")
         return {"error": str(e)}
+
