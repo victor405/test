@@ -15,6 +15,8 @@ EKS (FastAPI App)
         ↓
 RDS MySQL (private)
 
+![Architecture](https://raw.githubusercontent.com/victor405/test/main/devops/scripts/prompt_app_architecture.png)
+
 ---
 
 ## ⚙️ Tech Stack
