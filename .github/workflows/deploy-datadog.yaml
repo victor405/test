@@ -59,10 +59,12 @@ jobs:
             --namespace datadog \
             --create-namespace \
             --set datadog.apiKey=${{ secrets.DATADOG_API_KEY }} \
-            --set datadog.site="datadoghq.com" \
+            --set datadog.site=us5.datadoghq.com \
+            --set datadog.clusterName=demo-eks \
             --set datadog.logs.enabled=true \
             --set datadog.logs.containerCollectAll=true \
             --set datadog.apm.enabled=true \
             --set datadog.processAgent.enabled=true \
             --set datadog.kubeStateMetricsEnabled=true \
-            --set datadog.networkMonitoring.enabled=true
+            --set datadog.systemProbe.enabled=false \
+            --set datadog.networkMonitoring.enabled=false
