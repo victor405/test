@@ -1,4 +1,4 @@
-resource "datadog_synthetics_test" "cloudfront_uptime" {
+resource "datadog_synthetics_test" "cloudfront_uptime" { 
   name    = "cloudfront uptime"
   type    = "api"
   subtype = "http"
