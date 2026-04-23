@@ -1,3 +1,3 @@
-output "lambda_url" {
-  value = aws_lambda_function_url.lambda.function_url
-}
+# output "lambda_url" {
+#   value = aws_lambda_function_url.lambda.function_url
+# }
